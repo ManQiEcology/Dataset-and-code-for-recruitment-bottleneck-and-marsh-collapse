@@ -1,0 +1,11 @@
+Well_ID	S/N	Well_top_to_logger(cm)	Well_top_elevation(m)_2019	Well_length_above_soil_(cm)	Logger_depth_2019_(cm)	Soil_surface_elevation(m)_2019	Note	Well_top_elevation(m)_2020	Well_height_2020	Logger_depth(cm)_2020	Elevation(m)_2020
+DI_G_TC	20138781	95	NA	55.6	39.4	-0.09309	Tidal_creek	NA	55.6	39.4	-0.09309
+DI_G_E	20574344	92	0.720390125	58.5364125	33.4635875	0.135026	Dieback	0.702	51.8	40.2	0.184
+DI_G_P	20292500	96	0.623183989	62.19149886	33.80850114	0.001269	Pond	0.635	72.6	23.4	-0.091
+DI_G_H	20574343	95.5	NA	66	29.5	0.222678	Healthy	0.926	72.5	23	0.201
+DI_G_H_AIR	20574350	NA	NA	NA	NA	NA	Air_pressure	NA	NA	NA	NA
+											
+FCM_G_DC	20574347	102	NA	55.5	46.5	0.244246	Dieback_control	0.856	0.557	101.443	0.299
+FCM_G_HC	20574349	90.3	NA	56.5	33.8	0.259872	Healthy_control	0.8	0.527	89.773	0.273
+FCM_G_HC_AIR	20574345	NA	NA	NA	NA	NA	Air_pressure	NA	NA	NA	NA
+FCM_G_PC_AIR	NA	NA	NA	NA	NA	0.0447	NA	NA	NA	NA	NA
