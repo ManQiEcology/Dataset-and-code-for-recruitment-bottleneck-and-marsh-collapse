@@ -32,7 +32,7 @@ col_scheme <- c(
 )
 
 
-setwd(path_dir(here::here()))
+setwd(here::here())
 
 DI_plant<- read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", 
                       sheet = "Plant growth",na = c("NA", "missing", ""))
@@ -46,10 +46,17 @@ Flower_DI<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx",
                     sheet = "Flowering",na = c("NA", "missing", ""))
 Flower_FCM<-read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", 
                        sheet = "Flowering",na = c("NA", "missing", ""))
+Survival_DI<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", 
+                        sheet = "Survival rate",na = c("NA", "missing", ""))
+Survival_FCM<-read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", 
+                        sheet = "Survival rate",na = c("NA", "missing", ""))
+
   
 Shoot_Data<-rbind(FCM_plant[,1:9],DI_plant[,1:9])
 Biomass_Data<-rbind(Biomass_FCM,Biomass_DI)
 Flower_Data<-rbind(Flower_FCM,Flower_DI)
+Survival_Data<-rbind(Survival_DI,Survival_FCM)
+
 
 Shoot_Data$Site<-factor(c(rep("Farm Creek Marsh", nrow(FCM_plant)),
                           rep("Deal Island", nrow(DI_plant))),
@@ -66,9 +73,37 @@ Shoot_Data$Month[which(Shoot_Data$Month=="Jul-21")]<-"Jun-21"
 Flower_Data$Month[which(Flower_Data$Month=="Jul-21")]<-"Jun-21"
 Shoot_Data$Month<-factor(Shoot_Data$Month,levels = unique(Shoot_Data$Month))
 Flower_Data$Month<-factor(Flower_Data$Month,levels = unique(Flower_Data$Month))
+Survival_Data$Month<-factor(Survival_Data$Month,levels = unique(Shoot_Data$Month))
 Shoot_Data_21<-subset(Shoot_Data, Month=="Jun-21")
 Flower_Data_21<-subset(Flower_Data, Month=="Jun-21")
 Flower_Data_20<-subset(Flower_Data, Month=="Jun-20")
+
+#_______________________-shoot height
+Shoot_height_april<-subset(Shoot_Data, Month=="Apr-19" & Site=="Farm Creek Marsh")
+anova_model_height<- aov(`Average height (cm)`~ Treatment,
+                             data=Shoot_height_april)
+summary(anova_model_height)
+# Check assumptions
+shapiro.test(residuals(anova_model_height)) #height_GR didn't pass
+leveneTest(`Average height (cm)` ~ Site * Treatment, data = Shoot_height_april) #height_GR didn't pass
+# Post-hoc for main effects
+zone<-PostHocTest(anova_model_height, "Treatment")
+
+
+#__________________shoot number
+Shoot_no_april<-subset(Shoot_Data, Month=="Jun-20" & Site=="Farm Creek Marsh")
+anova_model_shoot_no<- aov(`Shoot No.`~ Treatment,
+                         data=Shoot_height_april)
+summary(anova_model_height)
+# Check assumptions
+shapiro.test(residuals(anova_model_height)) #height_GR didn't pass
+leveneTest(`Average height (cm)` ~ Site * Treatment, data = Shoot_height_april) #height_GR didn't pass
+# Post-hoc for main effects
+zone<-PostHocTest(anova_model_shoot_no, "Treatment")
+
+
+
+
 
 
 
@@ -97,6 +132,8 @@ Shoot_Data<-factorize_treatment(Shoot_Data)
 Shoot_GR<-factorize_treatment(Shoot_GR)
 Biomass_Data<-factorize_treatment(Biomass_Data)
 Flower_Data_21<-factorize_treatment(Flower_Data_21)
+Survival_Data<-factorize_treatment(Survival_Data)
+
 sum_height = summarySE(Shoot_Data,
                 measurevar="Average height (cm)",
                 groupvars=c("Site", "Treatment","Month"),na.rm = T)
@@ -239,7 +276,9 @@ Letters_plant<-data.frame("Height_GR_FCM"=c("a",	"a",	"a",	"a",	"a",	"a"),
 #PLOTTING THE RESULT
 ################################################################################
 #Shoot height and number
-plot_height_series<-ggplot(sum_height,
+sum_height_june<-subset(sum_height,Month=="Apr-19"|Month=="Jun-19"|Month=="Jun-20"|Month=="Jun-21")
+sum_shoot_no_june<-subset(sum_shoot_no,Month=="Apr-19"|Month=="Jun-19"|Month=="Jun-20"|Month=="Jun-21")
+plot_height_series<-ggplot(sum_height_june,
        aes(x = Month, y = `Average height (cm)`, group = Treatment, color = Treatment)) +
   ylim(0, 120) +
   geom_line(size = 1) +  # Add lines for each Treatment
@@ -250,7 +289,7 @@ plot_height_series<-ggplot(sum_height,
                 width = 0.2, size = 0.5) +  # Error bars
   
   labs(
-    x = "Month",
+    x = "Time (MM-YY)",
     y = "Average Height (cm)",
     color = "Treatment"
   ) +
@@ -267,7 +306,7 @@ plot_height_series<-ggplot(sum_height,
         #axis.ticks.x = element_blank(), # Remove x-axis text
         strip.text = element_blank())   # Remove facet titles
 
-plot_shoot_no_series<-ggplot(sum_shoot_no,
+plot_shoot_no_series<-ggplot(sum_shoot_no_june,
               aes(x = Month, y = `Shoot No.`, group = Treatment, color = Treatment)) +
   geom_line(size = 1) +  # Add lines for each Treatment
   #geom_point(size = 3) +  # Add points at each data value
@@ -277,7 +316,7 @@ plot_shoot_no_series<-ggplot(sum_shoot_no,
                 width = 0.2, size = 0.5) +  # Error bars
   
   labs(
-    x = "Month",
+    x = "Time (MM-YY)",
     y = "Shoot number",
     color = "Treatment"
   ) +
@@ -294,7 +333,52 @@ plot_shoot_no_series<-ggplot(sum_shoot_no,
         #axis.ticks.x = element_blank(), # Remove x-axis text
         strip.text = element_blank())   # Remove facet titles
 
+plot_survival_series<-ggplot(Survival_Data,
+                             aes(x = Month, y = `Survival rate (%)`, group = Treatment, color = Treatment)) +
+  geom_line(size = 1) +  # Add lines for each Treatment
+  scale_color_manual(values = col_scheme[levels(Survival_Data$Treatment)]) +
+  
+  labs(
+    x = "Time (MM-YY)",
+    y = "Survival rate (%)",
+    color = "Treatment"
+  ) +
+  ylim(0,100)+
+  facet_wrap(~ Site,scales = "free_x", nrow = 1) +
+  theme_bw()+ # Optional: cleaner theme
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        plot.title = element_text(size = rel(1.5),
+                                  face = "plain", vjust = 1.5), 
+        axis.title = element_text(face = "plain"),
+        #legend.position = "none",  # Hide the legend
+        axis.title.y = element_text(vjust= 1.8),
+        axis.text.x = element_text(angle = 90,vjust=0.5, hjust = 1),
+        #axis.ticks.x = element_blank(), # Remove x-axis text
+        strip.text = element_blank())   # Remove facet titles
 
+plot_survival<-ggplot(subset(Survival_Data,Month=="Jun-21"),
+                             aes(x = Treatment, y = `Survival rate (%)`,  group_by= Treatment, fill = Treatment)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.7) +
+  facet_wrap(~ Site, scales = "free_x", ncol = 1) +  # Arrange facets vertically
+  scale_fill_manual(values = col_scheme[levels(Survival_Data$Treatment)]) +
+  labs(
+    x = "Treatment",
+    y = "Survival rate in June 2021 (%) ",
+    color = "Treatment"
+  ) +
+  ylim(0,100)+
+  theme_bw()+ # Optional: cleaner theme
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        plot.title = element_text(size = rel(1.5),
+                                  face = "plain", vjust = 1.5), 
+        axis.title = element_text(face = "plain"),
+        #legend.position = "none",  # Hide the legend
+        axis.title.y = element_text(vjust= 1.8),
+        axis.text.x = element_text(angle = 90,vjust=0.5, hjust = 1),
+        #axis.ticks.x = element_blank(), # Remove x-axis text
+        strip.text = element_blank())   # Remove facet titles
 
 plot_height_GR<-ggplot(sum_heigh_GR,
                aes(x =Treatment, y = `Height_GR`, group = Treatment, fill = Treatment)) +
@@ -310,7 +394,7 @@ plot_height_GR<-ggplot(sum_heigh_GR,
                 y = `Height_GR` + se*`Height_GR`/abs(`Height_GR`) +
                   `Height_GR`/abs(`Height_GR`)*0.1), 
             position = position_dodge(width = 0.7), 
-            vjust = 0, size = 3, show.legend = FALSE) +
+            vjust = 0, size = 2, show.legend = FALSE) +
   labs(
     x = "Treatment",
     y = "Relative increase of shoot height",
@@ -341,7 +425,7 @@ plot_shoot_no_GR<-ggplot(sum_shoot_no_GR ,
                 y = ifelse(shoot_no_GR>=0, `shoot_no_GR` + se + 0.1,
                            `shoot_no_GR` - se - 0.3)), 
             position = position_dodge(width = 0.7), 
-            vjust = 0, size = 3, show.legend = FALSE) +
+            vjust = 0, size = 2, show.legend = FALSE) +
   labs(
     x = "Treatment",
     y = "Relative increase of shoot number",
@@ -374,10 +458,10 @@ plot_flower_21<-ggplot(subset(sum_flower_21, Month=="Jun-21"),
                 y = Flowering + se*Flowering/abs(Flowering) + 
                   Flowering/abs(Flowering)*0.5), 
             position = position_dodge(width = 0.7), 
-            vjust = 0, size = 3, show.legend = FALSE) +
+            vjust = 0, size = 2, show.legend = FALSE) +
   labs(
     x = "Treatment",
-    y = "Inflorescence number in Jun 2021",
+    y = "Inflorescence number in June 2021",
     color = "Treatment"
   ) +
   theme_bw()+ # Optional: cleaner theme
@@ -398,10 +482,14 @@ final_plot <- (plot_height_series | plot_shoot_no_series)
 final_plot
 dev.off()
 
+tiff("Result/survival rate_series.tiff", unit="in", width=5, height=3, res=600, pointsize=10)
+plot_survival_series
+dev.off()
 
 
-tiff("Result/plant performance in 2021.tiff", unit="in", width=5, height=5, res=600, pointsize=10)
-final_plot <- (plot_height_GR |plot_shoot_no_GR|  plot_flower_21)
+
+tiff("Result/plant performance in 2021.tiff", unit="in", width=7, height=5, res=600, pointsize=10)
+final_plot <- (plot_height_GR |plot_shoot_no_GR|  plot_flower_21|plot_survival)
 final_plot
 dev.off()
 

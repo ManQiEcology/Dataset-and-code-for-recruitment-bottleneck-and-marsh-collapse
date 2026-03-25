@@ -5,8 +5,9 @@ library(here)
 library(lme4)
 library(lmerTest)
 library(dplyr)
+library(readxl)
 
-setwd(dirname(here::here()))
+setwd(here::here())
 # Read data
 abio <- read_excel("Data/Vegetation survey/Plant diversity source data.xlsx")
 phy_data <- read_excel("Data/Vegetation survey/Pore water Salinity, pH, Redox, water depth.xlsx", sheet = "clean data")
