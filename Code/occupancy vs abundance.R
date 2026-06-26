@@ -8,7 +8,7 @@ library(here)
 library(ggtext)
 library(dplyr)
 
-setwd(dirname(here::here()))
+setwd((here::here()))
 
 # Read data
 abio <- read_excel("Data/Vegetation survey/Plant diversity source data.xlsx")
@@ -88,24 +88,6 @@ env_plot <- ggplot(env_ci_dual, aes(x = Point, y = mean, color = Variable, fill 
 
 # ===== Species heatmap (bottom panel) =====
 # Long-format abundance data
-long_data <- abio %>%
-  pivot_longer(cols = `Phragmites australis`:`Pluchea odorata`,
-               names_to = "Species", values_to = "Abundance")
-
-# Filter: keep species that appear in ≥2 quadrats and reach ≥10% abundance
-species_filter <- long_data %>%
-  group_by(Species) %>%
-  summarise(
-    occupancy = sum(Abundance > 0),
-    max_abundance = max(Abundance, na.rm = TRUE)
-  ) %>%
-  filter(occupancy >= 2, max_abundance >= 10) %>%
-  pull(Species)
-
-# Filter data
-filtered_long_data <- long_data %>%
-  filter(Species %in% species_filter)
-
 flood_intolerant_species <- c("Spartina patens",
                               "Distichlis spicata",
                               "Iva frutescens", 
@@ -128,8 +110,37 @@ Site_order <- c(
   "S1","S2", "S4", "S3"
 )
 
+
+
+long_data <- abio %>%
+  pivot_longer(cols = `Phragmites australis`:`Pluchea odorata`,
+               names_to = "Species", values_to = "Abundance")
+
+# Filter: keep species that appear in ≥2 quadrats and reach ≥10% abundance
+species_filter <- long_data %>%
+  group_by(Species) %>%
+  summarise(
+    occupancy = sum(Abundance > 0),
+    max_abundance = max(Abundance, na.rm = TRUE)
+  ) %>%
+  filter(occupancy >= 2, max_abundance >= 10) %>%
+  pull(Species)
+
+# Filter data
+filtered_long_data <- long_data %>%
+  filter(Species %in% species_filter)
+
+filtered_long_data <- filtered_long_data %>%
+  mutate(FloodClass = if_else(
+    Species %in% flood_intolerant_species,
+    "Flood-Sen",
+    "Flood-Tol"
+  ))
+
 total_quadrats_per_point_site <- 3 # 
-occupancy_abundance_by_point_site <- filtered_long_data %>%
+
+
+occupancy_abundance_by_point_site_species <- filtered_long_data %>%
   group_by(Point, Site, Species) %>%
   summarise(
     Occupancy = 100 * sum(Abundance > 0) / total_quadrats_per_point_site,
@@ -138,19 +149,44 @@ occupancy_abundance_by_point_site <- filtered_long_data %>%
   ) %>%
   filter(Occupancy > 0)
 
-occupancy_abundance_by_point_site$Species <- factor(
-  occupancy_abundance_by_point_site$Species,
+occupancy_abundance_by_point_site <- filtered_long_data %>%
+  group_by(Point, Site, Transect, FloodClass) %>%
+  summarise(
+    Presence = ifelse(sum(Abundance > 0), 1, 0),
+    Abundance = sum(Abundance[Abundance > 0], na.rm = TRUE),
+    .groups = "drop"
+  ) 
+occupancy_abundance_by_point_site <- occupancy_abundance_by_point_site %>%
+  group_by(Point, Site,FloodClass) %>%
+  summarise(
+    Occupy=sum(Presence>0),
+    Occupancy = 100 * sum(Presence > 0) / total_quadrats_per_point_site,
+    MeanAbundance = mean(Abundance[Abundance > 0], na.rm = TRUE),
+    .groups = "drop"
+  ) 
+
+occupancy_abundance_by_point_site_species <- filtered_long_data %>%
+  group_by(Point, Site, Species) %>%
+  summarise(
+    Occupancy = 100 * sum(Abundance > 0) / total_quadrats_per_point_site,
+    MeanAbundance = mean(Abundance[Abundance > 0], na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  filter(Occupancy > 0)
+
+occupancy_abundance_by_point_site_species$Species <- factor(
+  occupancy_abundance_by_point_site_species$Species,
   levels = flood_tolerance_order
 )
 
-occupancy_abundance_by_point_site$Site <- factor(
-  occupancy_abundance_by_point_site$Site,
+occupancy_abundance_by_point_site_species$Site <- factor(
+  occupancy_abundance_by_point_site_species$Site,
   levels = Site_order
 )
 # Define colors to match panel b
 flood_colors <- c("Flood-Sen" = "#66c2a5", "Flood-Tol" = "#fc8d62")
 
-occupancy_abundance_by_point_site <- occupancy_abundance_by_point_site %>%
+occupancy_abundance_by_point_site_species <- occupancy_abundance_by_point_site_species %>%
   mutate(FloodClass = if_else(
     Species %in% flood_intolerant_species,
     "Flood-Sen",
@@ -158,19 +194,19 @@ occupancy_abundance_by_point_site <- occupancy_abundance_by_point_site %>%
   ))
 
 # Create a new column with HTML-style colored species labels
-occupancy_abundance_by_point_site <- occupancy_abundance_by_point_site %>%
+occupancy_abundance_by_point_site_species <- occupancy_abundance_by_point_site_species %>%
   mutate(Species_colored = paste0(
     "<span style='color:", flood_colors[FloodClass], "'><i>", Species, "</i></span>"
   ))
 
 
 # Get order of Species and apply it to Species_colored
-species_order <- occupancy_abundance_by_point_site %>%
+species_order <- occupancy_abundance_by_point_site_species %>%
   distinct(Species, Species_colored) %>%
   arrange(match(Species, flood_tolerance_order))  # Preserve original order
 
-occupancy_abundance_by_point_site$Species_colored <- factor(
-  occupancy_abundance_by_point_site$Species_colored,
+occupancy_abundance_by_point_site_species$Species_colored <- factor(
+  occupancy_abundance_by_point_site_species$Species_colored,
   levels = species_order$Species_colored
 )
 
@@ -205,7 +241,7 @@ ggsave("Result/Occupancy difference between flood tolerance groups.tiff",
 
 
 
-bubble_plot <- ggplot(occupancy_abundance_by_point_site,
+bubble_plot <- ggplot(occupancy_abundance_by_point_site_species,
                       aes(x = Point, y = Species_colored)) +
   geom_point(aes(size = MeanAbundance, color = Occupancy)) +
   scale_size_area(max_size = 4.5, name = "Mean Abundance (%)") +
@@ -241,10 +277,33 @@ ggsave("Result/Occupancy_abundance by site.tiff", final_plot, width = 5, height 
 # test the difference in occupancy across point
 library(lme4)
 library(lmerTest)
+library(DHARMa)
+
+occupancy_abundance_by_point_site$Point<-
+  factor(occupancy_abundance_by_point_site$Point)
+occupancy_abundance_by_point_site$FloodClass<-
+  factor(occupancy_abundance_by_point_site$FloodClass)
+
+
+m1 <- lmer(
+  Occupancy ~ FloodClass * Point +
+    (1|Site),
+  data = occupancy_abundance_by_point_site
+)
+anova(m1)
+summary(m1)
+
+sim <- simulateResiduals(m1)
+
+plot(sim)
+testUniformity(sim)  # Tests distribution of residuals (normality proxy)
+testDispersion(sim)  # Tests over/under-dispersion (variance issues)
+testOutliers(sim)
+testResiduals(sim)  # Combines uniformity + dispersion tests
 
 model <- lm(
   Occupancy ~ FloodClass * Point,
-  data = occupancy_abundance_by_point_site
+  data = occupancy_abundance_by_point_site_species
 )
 
 ##Test assumptions
@@ -253,38 +312,38 @@ print(shapiro_test)
 
 ## --- (2) Homogeneity of variance ---
 levene_test <- leveneTest(Occupancy ~ FloodClass * Point,
-                          data = occupancy_abundance_by_point_site) #variance is homogeneous
+                          data = occupancy_abundance_by_point_site_species) #variance is homogeneous
 print(levene_test)
 
 # --- 1. Log transformation (add constant to avoid log(0))
-occupancy_abundance_by_point_site$log_Occupancy <- 
-  log(occupancy_abundance_by_point_site$Occupancy+1)
+occupancy_abundance_by_point_site_species$log_Occupancy <- 
+  log(occupancy_abundance_by_point_site_species$Occupancy+1)
 
 # --- 2. Refit model
 log_model <- lm(log_Occupancy ~ FloodClass * Point, 
-                data = occupancy_abundance_by_point_site)
+                data = occupancy_abundance_by_point_site_species)
 
 # --- 3. Recheck assumptions
 shapiro.test(residuals(log_model)) #log_occupancy failed the normality test
 leveneTest(log_Occupancy ~ FloodClass * Point, 
-           data = occupancy_abundance_by_point_site)
+           data = occupancy_abundance_by_point_site_species)
 qqnorm(resid(log_model)); qqline(resid(log_model), col = "red")
 
 
 # Fit ART model
 # Convert to factors (if not already)
-occupancy_abundance_by_point_site$FloodClass <- 
-  factor(occupancy_abundance_by_point_site$FloodClass)
+occupancy_abundance_by_point_site_species$FloodClass <- 
+  factor(occupancy_abundance_by_point_site_species$FloodClass)
 
-occupancy_abundance_by_point_site$Point <- 
-  factor(occupancy_abundance_by_point_site$Point)
+occupancy_abundance_by_point_site_species$Point <- 
+  factor(occupancy_abundance_by_point_site_species$Point)
 
 # Now run ART
 library(ARTool)
 art_model <- art(Occupancy ~ FloodClass * Point, 
-                 data = occupancy_abundance_by_point_site)
+                 data = occupancy_abundance_by_point_site_species)
 art_model <- art(Occupancy ~ FloodClass * Point, 
-                 data = occupancy_abundance_by_point_site)
+                 data = occupancy_abundance_by_point_site_species)
 anova(art_model)   # Check main and interaction effects
 
 # Post-hoc: if interaction is NOT significant
