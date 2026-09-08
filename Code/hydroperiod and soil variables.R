@@ -181,9 +181,9 @@ str(hydrpd)
 ##########################################################################################
 
 DI_salinity<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", sheet = "Salinity")
-FCM_salinity<- read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", sheet = "Salinity")
+FCM_salinity<- read_excel("Data/Pond plant transplanting result-2019/FCM.xlsx", sheet = "Salinity")
 DI_Redox<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", sheet = "Redox and Soil strength")
-FCM_Redox<-read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", sheet = "Redox and Soil strength")
+FCM_Redox<-read_excel("Data/Pond plant transplanting result-2019/FCM.xlsx", sheet = "Redox and Soil strength")
 DI_salinity$Month<-factor(DI_salinity$Month,levels=unique(DI_salinity$Month))
 FCM_salinity<-subset(FCM_salinity,FCM_salinity$Month!="Sep-20")
 FCM_salinity$Month<-factor(FCM_salinity$Month,levels=unique(FCM_salinity$Month))

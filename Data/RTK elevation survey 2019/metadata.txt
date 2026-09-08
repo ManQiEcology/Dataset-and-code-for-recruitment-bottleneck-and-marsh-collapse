@@ -1,0 +1,2 @@
+1. The elevation is in units of meters
+2. The coordinate system that we use as a guide is US State Plane 1983, 2011 Adjustment.  The Zone is Maryland 1900.  The vertical datum is NAVD 1988, using Geoid 12B.  Our system is not an exact match, because we have to maintain an adjustment to hold the integrity of our network, but it is infinitesimally close.

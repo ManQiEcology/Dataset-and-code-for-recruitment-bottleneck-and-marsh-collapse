@@ -36,19 +36,19 @@ setwd(here::here())
 
 DI_plant<- read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", 
                       sheet = "Plant growth",na = c("NA", "missing", ""))
-FCM_plant<- read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", 
+FCM_plant<- read_excel("Data/Pond plant transplanting result-2019/FCM.xlsx", 
                        sheet = "Plant growth",na = c("NA", "missing", ""))
 Biomass_DI<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", 
                        sheet = "Biomass",na = c("NA", "missing", ""))
-Biomass_FCM<- read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", 
+Biomass_FCM<- read_excel("Data/Pond plant transplanting result-2019/FCM.xlsx", 
                        sheet = "Biomass",na = c("NA", "missing", ""))
 Flower_DI<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", 
                     sheet = "Flowering",na = c("NA", "missing", ""))
-Flower_FCM<-read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", 
+Flower_FCM<-read_excel("Data/Pond plant transplanting result-2019/FCM.xlsx", 
                        sheet = "Flowering",na = c("NA", "missing", ""))
 Survival_DI<-read_excel("Data/Pond plant transplanting result-2019/DI.xlsx", 
                         sheet = "Survival rate",na = c("NA", "missing", ""))
-Survival_FCM<-read_excel("Data/Pond plant transplanting result-2019/FCM-Control.xlsx", 
+Survival_FCM<-read_excel("Data/Pond plant transplanting result-2019/FCM.xlsx", 
                         sheet = "Survival rate",na = c("NA", "missing", ""))
 
   
